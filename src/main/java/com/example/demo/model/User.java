@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.Date;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -28,6 +30,12 @@ public class User {
     private String password;
     @Column(name = "role", nullable = false)
     private Role role;
+    @Column(name = "verify", nullable = false)
+    private boolean verify=false;
+    @Column(name = "verification code", nullable = false)
+    private int verificationCode;
+    @Column(name = "verification expired", nullable = false)
+    private Date verificationExpiry;
 
     public User(String email, String firstname, String lastname, String password, Role role) {
         this.email = email;
@@ -35,6 +43,7 @@ public class User {
         this.lastname = lastname;
         this.password = password;
         this.role = role;
+
     }
 
     public String getEmail() {
@@ -83,5 +92,29 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public int getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(int verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+
+    public Date getVerificationExpiry() {
+        return verificationExpiry;
+    }
+
+    public void setVerificationExpiry(Date verificationExpiry) {
+        this.verificationExpiry = verificationExpiry;
+    }
+
+    public boolean isVerify() {
+        return verify;
+    }
+
+    public void setVerify(boolean verify) {
+        this.verify = verify;
     }
 }
