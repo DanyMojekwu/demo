@@ -8,9 +8,12 @@ import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.JwtService;
 import io.jsonwebtoken.Jwt;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -63,7 +66,7 @@ public class AuthController {
 
 @PostMapping("/login")
 
-    public  ResponseEntity<?> login(@RequestBody UserLoginDto logindto) {
+    public  ResponseEntity<?> login(@RequestBody UserLoginDto logindto, HttpServletResponse response) {
     var user = userRepository.findByEmail(logindto.getEmail()).orElseThrow(()-> new UsernameNotFoundException("user not found"));
 //    if (!user.isVerify()) return new ResponseEntity<>(Map.of("message","User not verified"), HttpStatus.FORBIDDEN);
     var authentication = authenticationManager.authenticate(
@@ -75,9 +78,19 @@ public class AuthController {
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
-       var token = jwtService.generateToken(user);
+       var authToken = jwtService.generateAuthToken(user);
 
-       return new ResponseEntity<>(new JwtDto(token),HttpStatus.OK);
+//       generate refresh token and save it to the cookie
+       var refreshToken = jwtService.generateRefreshToken(user);
+        Cookie cookie = new Cookie("refreshToken",refreshToken);
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/refresh");
+        cookie.setMaxAge(7 * 24 * 60 * 60);
+        response.addCookie(cookie);
+
+
+       return new ResponseEntity<>(new JwtDto(authToken),HttpStatus.OK);
 
 }
 
@@ -93,13 +106,26 @@ public ResponseEntity<?> verifyToken() {
     userRepository.save(user);
     return new ResponseEntity<>(user, HttpStatus.CREATED);
 }
+    @PostMapping("/refresh")
+    public ResponseEntity<?> getNewAuthToken(@CookieValue("refreshToken") String refreshToken){
+        if(refreshToken == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","refresh token missing"));
+
+        if (!jwtService.verify(refreshToken)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","refresh token expired"));
+
+        var id = Long.parseLong(jwtService.getPayload(refreshToken).getSubject());
+        var user = userRepository.findById(id).orElse(null);
+
+        if(user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","user not found"));
+
+        var newAuthToken = jwtService.generateAuthToken(user);
+
+        var jwtDto = new JwtDto(newAuthToken);
+
+        return new ResponseEntity<>(jwtDto,HttpStatus.OK);
+
+    }
 
 
-@ExceptionHandler(HttpClientErrorException.Forbidden.class)
-    public ResponseEntity<HashMap<String, String>> forbiddenError (HttpClientErrorException.Forbidden error){
-        var message = error.getMessage();
-        var errorJson = new HashMap<String,String>();
-        errorJson.put("error_message", message);
-        return new ResponseEntity<>(errorJson,HttpStatus.FORBIDDEN);
-}
+
+
 }

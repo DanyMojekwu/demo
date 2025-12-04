@@ -1,17 +1,16 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.JwtDto;
 import com.example.demo.dto.VerifyDto;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.service.JwtService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
@@ -22,6 +21,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class UserController {
     UserRepository userRepository;
+    JwtService jwtService;
 
     @GetMapping("/get")
     public ResponseEntity<List<User>> get (){
@@ -44,4 +44,6 @@ public class UserController {
         return new ResponseEntity<User>(userRepository.save(user),HttpStatus.OK);
 
     }
+
+
 }

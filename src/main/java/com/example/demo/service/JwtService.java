@@ -12,7 +12,7 @@ import java.util.Date;
 public class JwtService {
     @Value("${jwt.secret}")
     public String secret;
-     public String generateToken(User user){
+     public String generateToken(User user, int timeInMillis){
        return Jwts.builder()
                .subject(String.valueOf(user.getId()))
                .claim("Firstname",user.getFirstname())
@@ -20,11 +20,18 @@ public class JwtService {
                .claim("email",user.getEmail())
                .claim("role",user.getRole())
                .issuedAt(new Date(System.currentTimeMillis()))
-               .expiration(new Date(System.currentTimeMillis()+64000*1000))
+               .expiration(new Date(System.currentTimeMillis()+timeInMillis))
                .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
                .compact();
 
      }
+
+     public String generateAuthToken(User user){
+         return generateToken(user,86400000);
+     }
+    public String generateRefreshToken(User user){
+        return generateToken(user,86400000*7);
+    }
      public Claims getPayload (String token){
          return Jwts.parser()
                  .verifyWith(Keys.hmacShaKeyFor(secret.getBytes()))
@@ -35,8 +42,7 @@ public class JwtService {
      }
      public boolean verify( String token){
       var expirydate= getPayload(token).getExpiration();
-      var afterdate=expirydate.before(new Date());
-         System.out.println("Verify: "+afterdate);
+      var afterdate = new Date().before(expirydate);
       return afterdate;
      }
 
